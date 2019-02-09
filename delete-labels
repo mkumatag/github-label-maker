@@ -4,6 +4,7 @@ set -e
 
 # Script variables
 GITHUBORG=""
+GITHUBSERVER="api.github.com"
 GITHUBREPO=""
 LABELS=""
 LABELCOUNT="0"
@@ -41,7 +42,7 @@ get_labels() {
   # Git labels from github
   LABELS=$(curl -X GET --header "Authorization: token ${GITHUBTOKEN}" \
 --header "Content-Type: application/json" \
-"https://api.github.com/repos/${GITHUBORG}/${GITHUBREPO}/labels")
+"https://${GITHUBSERVER}/repos/${GITHUBORG}/${GITHUBREPO}/labels")
 
   # Store label count
   LABELCOUNT=$(echo $LABELS | jq '. | length')
@@ -59,7 +60,7 @@ delete_labels() {
 
     curl -X DELETE --header "Authorization: token ${GITHUBTOKEN}" \
       --header "Content-Type: application/json" \
-      "https://api.github.com/repos/${GITHUBORG}/${GITHUBREPO}/labels/${LABELNAME}"
+      "https://${GITHUBSERVER}/repos/${GITHUBORG}/${GITHUBREPO}/labels/${LABELNAME}"
   done < <(echo $LABELS | jq -r 'keys[] as $k | (.[$k].name)')
 }
 
@@ -75,6 +76,7 @@ Options:
   -o (required)     The Github organization (or user) that the repository resides under
   -r (required)     The name of the repository
   -t                A Github personal token, used for authenticating API requests
+  -s                Github server if you are using other than github.com. e.g: api.github.com
   -h                Print this message and quit
 
 EOF
@@ -88,11 +90,12 @@ verify_input() {
 }
 
 # Parse input options
-while getopts ":o:r:t:h" opt; do
+while getopts ":o:r:t:s:h" opt; do
   case "$opt" in
     o) GITHUBORG=$OPTARG;;
     r) GITHUBREPO=$OPTARG;;
     t) GITHUBTOKEN=$OPTARG;;
+    s) GITHUBSERVER=$OPTARG;;
     h) usage;;
     \?) echo_red "Invalid option: -${OPTARG}." && usage;;
     :) die "Option -${OPTARG} requires an argument.";;
