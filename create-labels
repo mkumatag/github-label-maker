@@ -6,6 +6,7 @@ set -e
 GITHUBORG=""
 GITHUBREPO=""
 GITHUBSERVER="api.github.com"
+LABEL_FILE=$(pwd)/labels.json
 
 # Include shell helpers
 source shell-helpers.sh
@@ -35,7 +36,7 @@ create_labels() {
       "https://${GITHUBSERVER}/repos/${GITHUBORG}/${GITHUBREPO}/labels"
 
     echo ""
-  done < <(jq -r 'keys[] as $k | (.[$k].name, .[$k].color)' $(pwd)/labels.json)
+  done < <(jq -r 'keys[] as $k | (.[$k].name, .[$k].color)' ${LABEL_FILE})
 }
 
 # Function that outputs usage information
@@ -51,6 +52,7 @@ Options:
   -r (required)     The name of the repository
   -t                A Github personal token, used for authenticating API requests
   -s                Github server if you are using other than github.com. e.g: api.github.com
+  -l                Label file in json format(Default: $pwd/labels.json)
   -h                Print this message and quit
 
 EOF
@@ -63,13 +65,19 @@ verify_input() {
   [ ! -z "${GITHUBORG}" ] && [ ! -z "${GITHUBREPO}" ] && [ ! -z "${GITHUBTOKEN}" ]
 }
 
+verify_label_file() {
+  # Check for label file exists or not
+  [ -f "${LABEL_FILE}" ]
+}
+
 # Parse input options
-while getopts ":o:r:t:s:h" opt; do
+while getopts ":o:r:t:s:l:h" opt; do
   case "$opt" in
     o) GITHUBORG=$OPTARG;;
     r) GITHUBREPO=$OPTARG;;
     t) GITHUBTOKEN=$OPTARG;;
     s) GITHUBSERVER=$OPTARG;;
+    l) LABEL_FILE=$OPTARG;;
     h) usage;;
     \?) echo_red "Invalid option: -${OPTARG}." && usage;;
     :) die "Option -${OPTARG} requires an argument.";;
@@ -78,6 +86,9 @@ done
 
 # Verify input
 ! verify_input && echo_red "Missing script options." && usage
+
+# Verify LABEL_FILE
+! verify_label_file && echo_red "file ${LABEL_FILE} not found" && usage
 
 # Execute main functionality
 main
